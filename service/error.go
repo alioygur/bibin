@@ -13,7 +13,7 @@ type (
 	// Error struct
 	Error struct {
 		Code           ErrCode
-		Err            error
+		Err            error // inner error
 		httpStatusCode int
 	}
 )
@@ -35,6 +35,7 @@ func NewErr(c ErrCode, err error) *Error {
 	return &Error{Code: c, Err: err}
 }
 
+// Error returns error message
 func (e Error) Error() string {
 	if e.Err != nil {
 		return e.Err.Error()
@@ -42,6 +43,7 @@ func (e Error) Error() string {
 	return fmt.Sprintf("service error: %d", e.Code)
 }
 
+// HTTPStatusCode returns http status code
 func (e Error) HTTPStatusCode() int {
 	if e.httpStatusCode == 0 {
 		return http.StatusBadRequest
@@ -49,6 +51,7 @@ func (e Error) HTTPStatusCode() int {
 	return e.httpStatusCode
 }
 
+// SetHTTPStatusCode sets http status code
 func (e *Error) SetHTTPStatusCode(c int) *Error {
 	e.httpStatusCode = c
 	return e

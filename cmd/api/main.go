@@ -15,9 +15,11 @@ import (
 	"github.com/alioygur/fb-tinder-app/providers"
 	fbrepo "github.com/alioygur/fb-tinder-app/providers/fb"
 	"github.com/alioygur/fb-tinder-app/providers/fbmock"
+	"github.com/alioygur/fb-tinder-app/providers/mongo"
 	mysqlrepo "github.com/alioygur/fb-tinder-app/providers/mysql"
 	services "github.com/alioygur/fb-tinder-app/service"
 	"github.com/alioygur/goutil"
+	"gopkg.in/mgo.v2"
 )
 
 func main() {
@@ -25,18 +27,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	waitForServices()
+	// waitForServices()
 
-	db, err := mysqlrepo.ConnectToDB()
+	// db, err := mysqlrepo.ConnectToDB()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	mongoSess, err := mgo.Dial(os.Getenv("MONGO_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer mongoSess.Close()
 
 	// repos
 	var fb services.FacebookRepository
-	var sql services.SQLRepository
+	var sql services.Repository
 
-	sql = mysqlrepo.New(db)
+	// sql = mysqlrepo.New(db)
+	sql = mongo.New(mongoSess)
 
 	switch goutil.EnvMustGet("APP_ENV") {
 	default:

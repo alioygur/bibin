@@ -8,14 +8,18 @@ services:
     volumes: 
       - ./app:/app
     links: 
-      - mysql
+      # - mysql
+      - mongo
     depends_on: 
-      - mysql
+      # - mysql
+      - mongo
     command: ["/app"]
-  mysql:
-    image: mysql:latest
-    volumes: 
-      - ./providers/mysql/scheme.sql:/docker-entrypoint-initdb.d/scheme.sql
-    environment: 
-      - MYSQL_DATABASE=database
-      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+  # mysql:
+  #   image: mysql:latest
+  #   volumes: 
+  #     - ./providers/mysql/scheme.sql:/docker-entrypoint-initdb.d/scheme.sql
+  #   environment: 
+  #     - MYSQL_DATABASE=database
+  #     - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+  mongo:
+    image: mongo:latest

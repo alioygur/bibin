@@ -41,7 +41,7 @@ type (
 )
 
 // New instances new sql repository
-func New(db *sql.DB) service.SQLRepository {
+func New(db *sql.DB) service.Repository {
 	return &repository{db: db}
 }
 

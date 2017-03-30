@@ -42,7 +42,7 @@ func (s *service) UploadPicture(r *UploadPictureRequest) (*domain.Image, error) 
 	}
 
 	img.UserID = r.UserID
-	img.IsProfile = boolPtr(false)
+	img.IsProfile = true
 
 	// if it first, then set as profile picture
 	exists, err := s.storage.PictureExistsByUserIDAndIsProfile(r.UserID, true)
@@ -51,7 +51,7 @@ func (s *service) UploadPicture(r *UploadPictureRequest) (*domain.Image, error) 
 	}
 
 	if !exists {
-		img.IsProfile = boolPtr(true)
+		img.IsProfile = true
 	}
 
 	return img, s.storage.PutPicture(img)
@@ -64,7 +64,7 @@ func (s *service) SetProfilePicture(uID, pID uint64) error {
 		return err
 	}
 
-	if p.UserID != uID || *p.IsProfile == true {
+	if p.UserID != uID || p.IsProfile == true {
 		return nil
 	}
 
@@ -74,13 +74,13 @@ func (s *service) SetProfilePicture(uID, pID uint64) error {
 		return err
 	}
 
-	pp.IsProfile = boolPtr(false)
+	pp.IsProfile = false
 	if err := s.storage.UpdatePicture(pp); err != nil {
 		return err
 	}
 
 	// set new profile picture
-	p.IsProfile = boolPtr(true)
+	p.IsProfile = true
 
 	return s.storage.UpdatePicture(p)
 }

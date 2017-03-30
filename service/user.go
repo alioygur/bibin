@@ -92,41 +92,28 @@ func (s *service) Register(r *RegisterRequest) (*domain.User, error) {
 		if err != nil {
 			return nil, err
 		}
-		img.IsProfile = boolPtr(true)
+		img.IsProfile = true
 		usr.Images = append(usr.Images, img)
 
 		if usr.IsAdmin == nil {
 			usr.IsAdmin = boolPtr(false)
 		}
 
-		// begin transaction
-		if err := s.storage.Begin(); err != nil {
+		if err := s.storage.AddUser(usr); err != nil {
 			return nil, err
 		}
 
-		if err := s.storage.PutUser(usr); err != nil {
-			if err := s.storage.Rollback(); err != nil {
-				return nil, err
-			}
-			return nil, err
-		}
-
-		// add credit.
-		var c domain.Credit
-		c.Amount = 100
-		c.UserID = usr.ID
-		c.Type = domain.CreditGift
-		if err := s.storage.PutCredit(&c); err != nil {
-			if err := s.storage.Rollback(); err != nil {
-				return nil, err
-			}
-			return nil, err
-		}
-
-		// end transaction
-		if err := s.storage.Commit(); err != nil {
-			return nil, err
-		}
+		// // add credit.
+		// var c domain.Credit
+		// c.Amount = 100
+		// c.UserID = usr.ID
+		// c.Type = domain.CreditGift
+		// if err := s.storage.PutCredit(&c); err != nil {
+		// 	if err := s.storage.Rollback(); err != nil {
+		// 		return nil, err
+		// 	}
+		// 	return nil, err
+		// }
 	}
 
 	usr, err = s.storage.UserByFacebookID(usr.FacebookID)
@@ -149,95 +136,73 @@ func (s *service) React(r *ReactRequest) (bool, error) {
 		return false, errors.WithStack(err)
 	}
 
-	// from user and to user are exists ?
-	users := []uint64{r.FromUserID, r.ToUserID}
-	for _, id := range users {
-		exists, err := s.storage.UserExistsByID(id)
-		if err != nil {
-			return false, err
-		}
-		if !exists {
-			return false, errors.WithStack(NewErr(NotFoundErrCode, nil))
-		}
-	}
+	// // from user and to user are exists ?
+	// users := []uint64{r.FromUserID, r.ToUserID}
+	// for _, id := range users {
+	// 	exists, err := s.storage.UserExistsByID(id)
+	// 	if err != nil {
+	// 		return false, err
+	// 	}
+	// 	if !exists {
+	// 		return false, errors.WithStack(NewErr(NotFoundErrCode, nil))
+	// 	}
+	// }
 
-	// check credit
-	credit, err := s.storage.CalcUserCredits(r.FromUserID)
+	// // check credit
+	// credit, err := s.storage.CalcUserCredits(r.FromUserID)
+	// if err != nil {
+	// 	return false, err
+	// }
+	// if credit < 1 {
+	// 	return false, errors.WithStack(NewErr(NoMoreCreditErrCode, nil))
+	// }
+
+	// // add credit transaction
+	// ct := domain.Credit{
+	// 	UserID: r.FromUserID,
+	// 	Type:   domain.CreditTransactionReact,
+	// 	Amount: -1,
+	// 	Desc:   fmt.Sprintf("react type: %v user: %v", r.Type, r.ToUserID),
+	// }
+	// if err := s.storage.PutCredit(&ct); err != nil {
+	// 	if err := s.storage.Rollback(); err != nil {
+	// 		return false, err
+	// 	}
+	// 	return false, err
+	// }
+
+	// already in matches table
+	exists, err := s.storage.AreFriends(r.FromUserID, r.ToUserID)
 	if err != nil {
 		return false, err
 	}
-	if credit < 1 {
-		return false, errors.WithStack(NewErr(NoMoreCreditErrCode, nil))
-	}
-
-	// begin trans
-	if err := s.storage.Begin(); err != nil {
-		return false, err
-	}
-
-	// add credit transaction
-	ct := domain.Credit{
-		UserID: r.FromUserID,
-		Type:   domain.CreditTransactionReact,
-		Amount: -1,
-		Desc:   fmt.Sprintf("react type: %v user: %v", r.Type, r.ToUserID),
-	}
-	if err := s.storage.PutCredit(&ct); err != nil {
-		if err := s.storage.Rollback(); err != nil {
-			return false, err
-		}
-		return false, err
+	if exists {
+		return false, nil
 	}
 
 	if err := s.storage.PutReaction(&react); err != nil {
-		if err := s.storage.Rollback(); err != nil {
-			return false, err
-		}
 		return false, err
 	}
 
-	// check for matches
-	// reaction type == like
-	if r.Type == domain.ReactLike {
-		// already matched before?
-		exists, err := s.storage.MatchExistsBy(r.FromUserID, r.ToUserID)
-		if err != nil {
-			if err := s.storage.Rollback(); err != nil {
-				return false, err
-			}
-			return false, err
-		}
-		if exists {
-			// commit trans
-			if err := s.storage.Commit(); err != nil {
-				return false, err
-			}
-			return false, nil // yes
-		}
-
-		// to user also liked from user before?
-		matched, err := s.storage.ReactionExistsBy(r.ToUserID, r.FromUserID, domain.ReactLike)
-		if err != nil {
-			if err := s.storage.Rollback(); err != nil {
-				return false, err
-			}
-			return false, err
-		}
-
-		// yes? then put to matches table
-		if matched {
-			if err := s.storage.PutMatch(r.FromUserID, r.ToUserID); err != nil {
-				if err := s.storage.Rollback(); err != nil {
-					return false, err
-				}
-				return false, err
-			}
-
-			return true, s.storage.Commit()
-		}
+	if r.Type == domain.ReactUnlike {
+		return false, nil
 	}
 
-	return false, s.storage.Commit()
+	// to user also liked from user before?
+	matched, err := s.storage.ReactionExistsBy(r.ToUserID, r.FromUserID, domain.ReactLike)
+	if err != nil {
+		return false, err
+	}
+
+	// yes? then put to matches table
+	if matched {
+		if err := s.storage.MakeFriend(r.FromUserID, r.ToUserID); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (s *service) Show(r *ShowUserRequest) (*domain.User, error) {
@@ -290,7 +255,7 @@ func (s *service) DiscoverPeople(r *DiscoverPeopleRequest) ([]*domain.User, erro
 		return nil, errors.WithStack(err)
 	}
 
-	return s.storage.DiscoverUsers(r.UserID, r.Gender, r.AgeMin, r.AgeMax, r.Limit)
+	return s.storage.DiscoverPeople(r.UserID, r.Gender, r.AgeMin, r.AgeMax, r.Limit)
 }
 
 func (s *service) GenToken(usr *domain.User, t TokenType) (string, error) {

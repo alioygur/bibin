@@ -7,6 +7,8 @@ import (
 )
 
 type (
+	// AccountType ...
+	AccountType uint8
 	// Gender type
 	Gender uint8
 	// UserStatus user status
@@ -20,28 +22,30 @@ type (
 
 	// User entity
 	User struct {
-		ID         uint64     `db:"id"`
-		FacebookID uint64     `db:"facebook_id"`
-		FirstName  string     `db:"first_name"`
-		LastName   string     `db:"last_name"`
-		Email      string     `db:"email"`
-		Gender     Gender     `db:"gender"`
-		Birthday   *time.Time `db:"birthday"`
-		Status     UserStatus `db:"status"`
-		IsAdmin    *bool      `db:"is_admin"`
-		CreatedAt  time.Time  `db:"created_at"`
-		UpdatedAt  time.Time  `db:"updated_at"`
+		ID          uint64      `bson:"id"`
+		FacebookID  uint64      `bson:"facebook_id"`
+		FirstName   string      `bson:"first_name"`
+		LastName    string      `bson:"last_name"`
+		Email       string      `bson:"email"`
+		Gender      Gender      `bson:"gender"`
+		Birthday    *time.Time  `bson:"birthday"`
+		Status      UserStatus  `bson:"status"`
+		IsAdmin     *bool       `bson:"is_admin"`
+		AccountType AccountType `bson:"account_type"`
+		CreatedAt   time.Time   `bson:"created_at"`
+		UpdatedAt   time.Time   `bson:"updated_at"`
 
-		Images []*Image
+		Friends []*User  `json:",omitempty" bson:"-"`
+		Images  []*Image `json:",omitempty" bson:"images"`
 	}
 
 	// Image entity
 	Image struct {
-		ID        uint64    `db:"id"`
-		UserID    uint64    `db:"user_id"`
-		Name      string    `db:"name"` // uniq name
-		IsProfile *bool     `db:"is_profile"`
-		CreatedAt time.Time `db:"created_at"`
+		ID        uint64    `bson:"-"`    // todo: delete this field
+		UserID    uint64    `bson:"-"`    // todo: delete this field
+		Name      string    `bson:"name"` // uniq name
+		IsProfile bool      `bson:"is_profile"`
+		CreatedAt time.Time `bson:"created_at"`
 	}
 
 	// FBTestUser entity
@@ -53,31 +57,37 @@ type (
 
 	// Reaction entity
 	Reaction struct {
-		ID         uint64       `db:"id"`
-		FromUserID uint64       `db:"from_user_id"`
-		ToUserID   uint64       `db:"to_user_id"`
-		Type       ReactionType `db:"type"`
-		CreatedAt  time.Time    `db:"created_at"`
+		ID         uint64       `bson:"id"`
+		FromUserID uint64       `bson:"from_user_id"`
+		ToUserID   uint64       `bson:"to_user_id"`
+		Type       ReactionType `bson:"type"`
+		CreatedAt  time.Time    `bson:"created_at"`
 	}
 
 	// Credit ...
 	Credit struct {
-		ID        uint64                 `db:"id"`
-		UserID    uint64                 `db:"user_id"`
-		Amount    int                    `db:"amount"`
-		Type      CreaditTransactionType `db:"type"`
-		Desc      string                 `db:"desc"`
-		CreatedAt time.Time              `db:"created_at"`
+		ID        uint64                 `bson:"id"`
+		UserID    uint64                 `bson:"user_id"`
+		Amount    int                    `bson:"amount"`
+		Type      CreaditTransactionType `bson:"type"`
+		Desc      string                 `bson:"desc"`
+		CreatedAt time.Time              `bson:"created_at"`
 	}
 
 	// Abuse ...
 	Abuse struct {
-		ID        uint64    `db:"id"`
-		UserID    uint64    `db:"user_id"`    // reporter
-		ToUserID  uint64    `db:"to_user_id"` // reported
-		Reason    string    `db:"reason"`
-		CreatedAt time.Time `db:"created_at"`
+		ID        uint64    `bson:"id"`
+		UserID    uint64    `bson:"user_id"`    // reporter
+		ToUserID  uint64    `bson:"to_user_id"` // reported
+		Reason    string    `bson:"reason"`
+		CreatedAt time.Time `bson:"created_at"`
 	}
+)
+
+// Account Types
+const (
+	FreeAccount    AccountType = iota
+	PremiumAccount AccountType = iota
 )
 
 // Genders
@@ -89,7 +99,7 @@ const (
 
 // User statuses
 const (
-	NewUser UserStatus = iota
+	StatusNewUser UserStatus = iota
 )
 
 // React types
@@ -108,6 +118,19 @@ const (
 const (
 	userContextKey contextKey = "user"
 )
+
+// NewUser instances new User with default values
+func NewUser() *User {
+	var u User
+	var f bool
+	u.Gender = GenderUnknown
+	u.AccountType = FreeAccount
+	u.Status = StatusNewUser
+	u.IsAdmin = &f
+	u.Images = make([]*Image, 0)
+	u.Friends = make([]*User, 0)
+	return &u
+}
 
 func (u *User) NewContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, userContextKey, u)
@@ -131,4 +154,11 @@ func UserMustFromContext(ctx context.Context) *User {
 // ProfilePicture returns profile picture url
 func (u *User) ProfilePicture() string {
 	return fmt.Sprintf("https://graph.facebook.com/%d/picture?type=%s", u.ID, "large")
+}
+
+// SetAge sets user's age.
+func (u *User) SetAge(age int) {
+	now := time.Now()
+	b := time.Date(now.Year()-age, now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	u.Birthday = &b
 }

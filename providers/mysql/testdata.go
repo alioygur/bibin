@@ -26,7 +26,7 @@ func GenUsers(count int) []*domain.User {
 		// age = 17 + i
 		b := time.Date(now.Year()-(17+i), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 		u.Birthday = &b
-		u.Status = domain.NewUser
+		u.Status = domain.StatusNewUser
 		u.IsAdmin = boolPtr(false)
 		u.CreatedAt = now
 		u.UpdatedAt = now

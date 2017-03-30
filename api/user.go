@@ -111,6 +111,13 @@ func (h *handler) discoverPeople(w http.ResponseWriter, r *http.Request) error {
 	}
 	rr.AgeMax = aMax
 
+	l, err := queryValueInt("limit", r)
+	if err != nil {
+		err := service.NewErr(service.ValidationErrCode, err)
+		return errors.WithStack(err)
+	}
+	rr.Limit = l
+
 	people, err := h.DiscoverPeople(&rr)
 	if err != nil {
 		return err

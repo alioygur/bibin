@@ -53,14 +53,14 @@ type (
 	// user implementation of User
 	service struct {
 		fb      FacebookRepository
-		storage SQLRepository
+		storage Repository
 		jwt     JWTSignParser
 		imgCDN  ImageCDN
 	}
 )
 
 // New instances new service
-func New(fb FacebookRepository, storage SQLRepository, jwt JWTSignParser, imgCDN ImageCDN) Service {
+func New(fb FacebookRepository, storage Repository, jwt JWTSignParser, imgCDN ImageCDN) Service {
 	return &service{fb: fb, storage: storage, jwt: jwt, imgCDN: imgCDN}
 }
 

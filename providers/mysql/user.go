@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (r *repository) PutUser(u *domain.User) error {
+func (r *repository) AddUser(u *domain.User) error {
 	now := time.Now().Round(time.Second)
 	u.CreatedAt = now
 	u.UpdatedAt = now
@@ -115,7 +115,7 @@ func (r *repository) SyncUserFriendsByFacebookID(user uint64, friends []uint64) 
 	return tx.Commit()
 }
 
-func (r *repository) DiscoverUsers(user uint64, gender domain.Gender, ageMin int, ageMax int, limit int) ([]*domain.User, error) {
+func (r *repository) DiscoverPeople(user uint64, gender domain.Gender, ageMin int, ageMax int, limit int) ([]*domain.User, error) {
 	now := time.Now()
 	min := now.Year() - ageMax
 	max := now.Year() - ageMin

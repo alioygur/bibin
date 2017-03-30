@@ -16,24 +16,23 @@ type (
 		DeleteTestUser(id string) error
 	}
 
-	// SQLRepository sql repository interface
-	SQLRepository interface {
-		transactioner
-		PutUser(*domain.User) error
+	// Repository database repository interface
+	Repository interface {
+		AddUser(*domain.User) error
 		UserExistsByID(id uint64) (bool, error)
 		UserExistsByFacebookID(id uint64) (bool, error)
 		UserByFacebookID(id uint64) (*domain.User, error)
 		UserByEmail(email string) (*domain.User, error)
 		UserByID(id uint64) (*domain.User, error)
-		DiscoverUsers(user uint64, gender domain.Gender, ageMin int, ageMax int, limit int) ([]*domain.User, error)
+		DiscoverPeople(user uint64, gender domain.Gender, ageMin int, ageMax int, limit int) ([]*domain.User, error)
 		SyncUserFriendsByFacebookID(id uint64, friends []uint64) error
 		UpdateUser(*domain.User) error
 
 		PutReaction(*domain.Reaction) error
 		ReactionExistsBy(fromUserID uint64, toUserID uint64, typ domain.ReactionType) (bool, error)
 
-		PutMatch(userID uint64, friendID uint64) error
-		MatchExistsBy(userID uint64, friendID uint64) (bool, error)
+		MakeFriend(user1 uint64, user2 uint64) error
+		AreFriends(user1 uint64, user2 uint64) (bool, error)
 
 		PutCredit(*domain.Credit) error
 		CalcUserCredits(id uint64) (int, error)
@@ -47,11 +46,5 @@ type (
 		PictureExistsByUserIDAndIsProfile(uint64, bool) (bool, error)
 		UpdatePicture(*domain.Image) error
 		DeletePicture(uint64) error
-	}
-
-	transactioner interface {
-		Begin() error
-		Rollback() error
-		Commit() error
 	}
 )

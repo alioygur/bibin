@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"testing"
 
@@ -29,4 +30,14 @@ func ali() (i interface{}, err error) {
 		return nil, err
 	}
 	return nil, err
+}
+
+func TestChannel(t *testing.T) {
+	c := make(chan int, 2)
+	c <- 1
+	c <- 2
+	fmt.Println(<-c)
+	fmt.Println(<-c)
+	c <- 3
+	fmt.Println(<-c)
 }

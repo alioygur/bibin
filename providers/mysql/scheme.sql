@@ -10,6 +10,7 @@ CREATE TABLE `users` (
   `birthday` DATE NOT NULL,  
   `status` TINYINT unsigned NOT NULL DEFAULT 0,
   `is_admin` TINYINT unsigned NOT NULL DEFAULT 0,
+  `account_type` TINYINT unsigned NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
