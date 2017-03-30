@@ -65,7 +65,7 @@ func Test_repository_DiscoverPeople(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := r.DiscoverPeople(tt.args.userID, tt.args.gender, tt.args.ageMin, tt.args.ageMax, tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("repository.DiscoverPeople() error = %+v, wantErr %v", err, tt.wantErr)
+				t.Errorf("repository.DiscoverPeople() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			gotIDs := userIDs(got)

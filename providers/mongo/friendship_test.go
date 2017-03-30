@@ -4,11 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/alioygur/fb-tinder-app/domain"
 	"gopkg.in/mgo.v2/bson"
 )
 
-// add two users and make friends them then checks are friends
 func Test_repository_MakeFriend(t *testing.T) {
 	r, deferFnc, err := newTestRepo(true)
 	if err != nil {
@@ -16,13 +14,8 @@ func Test_repository_MakeFriend(t *testing.T) {
 	}
 	defer deferFnc()
 
-	u1 := domain.NewUser()
-	u1.ID = 1
-	u1.FirstName = "Ali"
-
-	u2 := domain.NewUser()
-	u2.ID = 2
-	u2.FirstName = "Huseyin"
+	var u1, u2 user
+	u1.ID, u2.ID = 1, 2
 
 	if err := r.c(usersTbl).Insert(u1, u2); err != nil {
 		t.Error(err)
@@ -34,38 +27,25 @@ func Test_repository_MakeFriend(t *testing.T) {
 		return
 	}
 
-	// validate friendships
-	yes, err := r.AreFriends(1, 2)
-	if err != nil {
+	// try add duplicate records
+	if err := r.MakeFriend(2, 1); err != nil {
 		t.Error(err)
 		return
 	}
-	if !yes {
-		t.Error("user 1 and user 2 are not friends")
+
+	if err := r.c(usersTbl).Find(bson.M{"id": 1}).One(&u1); err != nil {
+		t.Error(err)
+		return
+	}
+	if err := r.c(usersTbl).Find(bson.M{"id": 2}).One(&u2); err != nil {
+		t.Error(err)
 		return
 	}
 
-	t.Run("try make friends users that already friends", func(t *testing.T) {
-		if err := r.MakeFriend(2, 1); err != nil {
-			t.Error(err)
-			return
-		}
-
-		// ensure there isn't duplicate records
-		var u1, u2 user
-		if err := r.c(usersTbl).Find(bson.M{"id": 1}).One(&u1); err != nil {
-			t.Error(err)
-			return
-		}
-		if err := r.c(usersTbl).Find(bson.M{"id": 2}).One(&u2); err != nil {
-			t.Error(err)
-			return
-		}
-
-		if !reflect.DeepEqual(u1.FriendList, []uint64{2}) || !reflect.DeepEqual(u2.FriendList, []uint64{1}) {
-			t.Errorf("want u1 friendlist %v, got %v and want u2 friendlist %v, got %v", []uint64{2}, u1.FriendList, []uint64{1}, u2.FriendList)
-		}
-	})
+	// ensure 1, and 2 users are friend, and there isn't duplicate rows
+	if !reflect.DeepEqual(u1.FriendList, []uint64{2}) || !reflect.DeepEqual(u2.FriendList, []uint64{1}) {
+		t.Errorf("want u1 friendlist %v, got %v and want u2 friendlist %v, got %v", []uint64{2}, u1.FriendList, []uint64{1}, u2.FriendList)
+	}
 }
 
 func Test_repository_AreFriends(t *testing.T) {
